@@ -75,7 +75,7 @@ RAG System
 
 يمكنك إضافة صور للواجهة هنا لاحقًا:
 
-![Home Page](images/home.png)
+![Home Page](home.png)
 ![Dashboard](images/dashboard.png)
 مستقبل المشروع
 دعم تقارير PDF
