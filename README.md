@@ -76,7 +76,12 @@ RAG System
 يمكنك إضافة صور للواجهة هنا لاحقًا:
 
 ![Home Page](home.png)
-![Dashboard](images/dashboard.png)
+![Dashboard](p1.png)
+![Dashboard](p2.png)
+![Dashboard](p3.png)
+![Dashboard](p4.png)
+
+
 مستقبل المشروع
 دعم تقارير PDF
 إنشاء حسابات للأطفال
