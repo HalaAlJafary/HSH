@@ -1,0 +1,778 @@
+{
+  "name": "My workflow 6",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "analyze-drawing",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "binaryPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "557b69a8-1a09-4e1a-b9f2-56e6508b4bc3",
+      "name": "Webhook",
+      "webhookId": "bd4e35d1-762c-4226-afc2-dcb5fc015ba7"
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "body.image",
+        "binaryPropertyName": "drawing.png",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "5b09d50a-295c-4e57-ae83-5557b543b910",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3-flash-preview",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3-flash-preview"
+        },
+        "text": "أنت محلل خبير متخصص في رسومات الأطفال وعلم النفس التربوي. قم بتحليل الصورة المرفقة وأرجع النتيجة فقط وحصراً ككائن JSON مسطح (Flat JSON) يحتوي على الأعمدة التالية وبنفس الترتيب تماماً.\n\nتعليمات صارمة:\n\nلا تستخدم كائنات متداخلة (Nested Objects).\n\nلا تترك أي حقل فارغاً؛ استخدم \"0\" للأرقام و \"غير محدد\" للنصوص إذا لم تتوفر معلومة.\n\nالمخرجات يجب أن تكون نص JSON فقط، بدون أي مقدمات أو علامات ```json.\n\nالتقييمات الرقمية من 1-10، والدرجة الكلية من 1-100.\n\nهيكل الـ JSON المطلوب:\n{\n\"drawingId\": \"يُملأ تلقائياً أو اكتب مجهول\",\n\"date\": \"تاريخ اليوم\",\n\"childId\": \"guest\",\n\"child_status\": \"وصف مختصر لحالة الطفل النفسية والمهارية (مثلاً: مستقر ومبدع، قلق، مهارات متقدمة، يحتاج دعم)\",\n\"colors_used\": \"ذكر الألوان مفصولة بفاصلة\",\n\"color_count\": 0,\n\"dominant_color\": \"اللون الأساسي\",\n\"color_temperature\": \"دافئة، باردة، أو مختلطة\",\n\"color_variety\": 0,\n\"elements_found\": \"ذكر العناصر مفصولة بفاصلة\",\n\"person_count\": 0,\n\"is_self_portrait\": \"نعم أو لا\",\n\"character_size\": \"كبير، صغير، متوسط، أو غير موجود\",\n\"family_complete\": \"كاملة، ناقصة، أو غير موجودة\",\n\"drawing_position\": \"مركز، يمين، يسار، أعلى، أو أسفل\",\n\"drawing_size\": \"كبيرة، صغيرة، أو متوسطة\",\n\"line_fluidity\": 0,\n\"pen_pressure\": \"خفيف، متوسط، أو ثقيل\",\n\"skill_level\": \"متقدم، متوسط، أو يحتاج دعم\",\n\"cognitive_level\": \"متقدم، مناسب، أو يحتاج دعم\",\n\"drawing_story\": \"وصف موجز جداً للقصة\",\n\"age_appropriate\": \"عمر تقريبي مناسب للرسمة\",\n\"happiness_index\": 0,\n\"emotional_state\": \"سعيد، قلق، حزين، غاضب، هادئ، أو مختلط\",\n\"joy_sources\": \"العناصر الدالة على الفرح\",\n\"warning_level\": \"آمن، يحتاج متابعة، أو عاجل\",\n\"violence_index\": 0,\n\"depression_index\": 0,\n\"total_score\": 0,\n\"development_stage\": \"طبيعي، متقدم، أو يحتاج دعم\"\n}",
+        "inputType": "binary",
+        "binaryPropertyName": "drawing.png",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "3cbc1869-be55-4dd6-ac26-7c1ca6da4a82",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "m3W5jccPzuvirosp",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. تعريف ترتيب الأعمدة الثابتة كما في البرومبت (لضمان عدم حدوث زياحة بالبيانات)\nconst fixedColumns = [\n    \"drawingId\", \"date\", \"childId\", \"child_status\", \"colors_used\", \n    \"color_count\", \"dominant_color\", \"color_temperature\", \"color_variety\", \n    \"elements_found\", \"person_count\", \"is_self_portrait\", \"character_size\", \n    \"family_complete\", \"drawing_position\", \"drawing_size\", \"line_fluidity\", \n    \"pen_pressure\", \"skill_level\", \"cognitive_level\", \"drawing_story\", \n    \"age_appropriate\", \"happiness_index\", \"emotional_state\", \"joy_sources\", \n    \"warning_level\", \"violence_index\", \"depression_index\", \"total_score\", \n    \"development_stage\"\n];\n\n// 2. الوصول للنص من المسار الذي حددته\nconst rawText = $input.first().json.content.parts[0].text;\n\ntry {\n    // 3. تحويل النص القادم من جيميناي إلى Object\n    const data = JSON.parse(rawText);\n\n    // 4. استخراج القيم بترتيب الأعمدة الثابتة\n    const orderedValues = fixedColumns.map(col => {\n        // نضع القيمة الموجودة، وإذا لم توجد نضع \"غير محدد\" كما في البرومبت\n        return (data[col] !== undefined) ? data[col] : \"غير محدد\";\n    });\n\n    // 5. إرجاع النتيجة (للأعمدة والقيم)\n    return {\n        columns: fixedColumns,\n        orderedValues: orderedValues,\n        // سطر جاهز للنسخ واللصق اليدوي في شيت (مفصول بـ Tab)\n        clipboardReady: orderedValues.join('\\t') \n    };\n\n} catch (error) {\n    return {\n        error: \"فشل في تحليل النص، تأكد أن جيميناي أرجع JSON صحيح\",\n        details: error.message\n    };\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "12769f9e-f4ff-40cb-9b12-a150e3c6ffaf",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1uDAZneAPTp1rlJlvnXMBZ-F0SS46IX5tsUP5ZOUGovI",
+          "mode": "list",
+          "cachedResultName": "hsh",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uDAZneAPTp1rlJlvnXMBZ-F0SS46IX5tsUP5ZOUGovI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uDAZneAPTp1rlJlvnXMBZ-F0SS46IX5tsUP5ZOUGovI/edit#gid=0"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "detectAutomatically"
+            }
+          },
+          "outputFormatting": {
+            "values": {
+              "general": "UNFORMATTED_VALUE",
+              "date": "FORMATTED_STRING"
+            }
+          },
+          "returnFirstMatch": false
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "df87062a-a966-408f-8e98-06c2cce65cde",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MNUCOylJl1ZFUuTM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1uDAZneAPTp1rlJlvnXMBZ-F0SS46IX5tsUP5ZOUGovI",
+          "mode": "list",
+          "cachedResultName": "hsh",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uDAZneAPTp1rlJlvnXMBZ-F0SS46IX5tsUP5ZOUGovI/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1uDAZneAPTp1rlJlvnXMBZ-F0SS46IX5tsUP5ZOUGovI/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "drawingId": "={{ $json.orderedValues[0] }}",
+            "date": "={{ $json.orderedValues[1] }}",
+            "childId": "={{ $json.childId }}",
+            "colors_used": "={{ $json.orderedValues[4] }}",
+            "color_count": "={{ $json.orderedValues[5] }}",
+            "dominant_color": "={{ $json.orderedValues[6] }}",
+            "color_temperature": "={{ $json.orderedValues[7] }}",
+            "color_variety": "={{ $json.orderedValues[8] }}",
+            "elements_found": "={{ $json.orderedValues[9] }}",
+            "person_count": "={{ $json.orderedValues[10] }}",
+            "character_size": "={{ $json.orderedValues[12] }}",
+            "family_complete": "={{ $json.orderedValues[13] }}",
+            "drawing_position": "={{ $json.orderedValues[14] }}",
+            "drawing_size": "={{ $json.orderedValues[15] }}",
+            "line_fluidity": "={{ $json.orderedValues[16] }}",
+            "pen_pressure": "={{ $json.orderedValues[17] }}",
+            "skill_level": "={{ $json.orderedValues[18] }}",
+            "cognitive_level": "={{ $json.orderedValues[19] }}",
+            "drawing_story": "={{ $json.orderedValues[20] }}",
+            "age_appropriate": "={{ $json.orderedValues[21] }}",
+            "happiness_index": "={{ $json.orderedValues[22] }}",
+            "emotional_state": "={{ $json.orderedValues[23] }}",
+            "joy_sources": "={{ $json.orderedValues[24] }}",
+            "warning_level": "={{ $json.orderedValues[25] }}",
+            "violence_index": "={{ $json.orderedValues[26] }}",
+            "depression_index": "={{ $json.orderedValues[27] }}",
+            "total_score": "={{ $json.orderedValues[28] }}",
+            "development_stage": "={{ $json.orderedValues[29] }}",
+            "is_self_portrait": "={{ $json.orderedValues[11] }}",
+            "child_status": "={{ $json.orderedValues[3] }}"
+          },
+          "matchingColumns": [
+            "childId"
+          ],
+          "schema": [
+            {
+              "id": "drawingId",
+              "displayName": "drawingId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "childId",
+              "displayName": "childId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "child_status",
+              "displayName": "child_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "colors_used",
+              "displayName": "colors_used",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color_count",
+              "displayName": "color_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "dominant_color",
+              "displayName": "dominant_color",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color_temperature",
+              "displayName": "color_temperature",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "color_variety",
+              "displayName": "color_variety",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "elements_found",
+              "displayName": "elements_found",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "person_count",
+              "displayName": "person_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "is_self_portrait",
+              "displayName": "is_self_portrait",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "character_size",
+              "displayName": "character_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "family_complete",
+              "displayName": "family_complete",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "drawing_position",
+              "displayName": "drawing_position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "drawing_size",
+              "displayName": "drawing_size",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "line_fluidity",
+              "displayName": "line_fluidity",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pen_pressure",
+              "displayName": "pen_pressure",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "skill_level",
+              "displayName": "skill_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cognitive_level",
+              "displayName": "cognitive_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "drawing_story",
+              "displayName": "drawing_story",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "age_appropriate",
+              "displayName": "age_appropriate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "happiness_index",
+              "displayName": "happiness_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "emotional_state",
+              "displayName": "emotional_state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "joy_sources",
+              "displayName": "joy_sources",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "warning_level",
+              "displayName": "warning_level",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "violence_index",
+              "displayName": "violence_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "depression_index",
+              "displayName": "depression_index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_score",
+              "displayName": "total_score",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "development_stage",
+              "displayName": "development_stage",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "strengths",
+              "displayName": "strengths",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "recommendation",
+              "displayName": "recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "needs_specialist",
+              "displayName": "needs_specialist",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "final_notes",
+              "displayName": "final_notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "imageData",
+              "displayName": "imageData",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "content",
+              "displayName": "content",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "finishReason",
+              "displayName": "finishReason",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "index",
+              "displayName": "index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        0
+      ],
+      "id": "c7bb6275-5be8-4006-b643-9b8a080d8a82",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "MNUCOylJl1ZFUuTM",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        0
+      ],
+      "id": "a5e97794-9572-4182-9c4b-f4b40c23e144",
+      "name": "Limit"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. استخراج البيانات من النود السابقة\nconst item = $input.first().json;\n\n// 2. قاعدة المعرفة العلمية الكاملة (بدون أي اختصار)\nconst knowledgeBase = `[\n  {\n    \"id\": \"draw_basics_1\",\n    \"category\": \"مفهوم الرسم\",\n    \"title\": \"الرسم لغة الطفل التعبيرية\",\n    \"content\": \"رسوم الأطفال كلغة تعبيرية تعني نقل المعاني والصور الإيضاحية، وهي لقاء بين عالم الذات وعالم الموضوع. يعبر فيها الطفل عن الأنا، وهي الوسيلة التي يهدف من خلالها إلى تحقيق توازنه النفسي. الرسم بالنسبة للأطفال لغة وشكل من أشكال التعبير المعرفي، فالطفل يرسم ما يعرفه لا ما يراه. رسوم الأطفال وعاء تعبيري يمكّنه من الرد على الكبار ومن أسئلة يتعمد طرحها. اللغة الفنية هي اللغة التي يعبر بها الطفل عن واقعه الاجتماعي والأسري ويعبر عن نفسه هو أيضاً.\",\n    \"tags\": [\"رسم\", \"تعبير\", \"لغة\", \"تواصل\", \"طفل\"]\n  },\n  {\n    \"id\": \"draw_basics_2\",\n    \"category\": \"مفهوم الرسم\",\n    \"title\": \"الرسم مرآة للحالة النفسية\",\n    \"content\": \"ترتبط رسومات الأطفال بالشخصية ارتباطاً وثيقاً؛ تدل رسومات الأطفال على حالتهم النفسية وما يعانونه من مشاكل داخلية. يساعد أطباء التحليل النفسي على أن يستدلوا على مشاكل الأطفال النفسية من خلال تحليل رسوماتهم العفوية والتلقائية. الطفل المحبط يلجأ للفن للتنفيس عن إحباطه، فالرسم يعني المرآة الصادقة لعكس العديد من المشكلات النفسية التي يعاني منها الطفل. الرسم وسيلة للتعبير اللافظي وهو تعبير حر تلقائي ويعتبر لغة الطفل للتواصل والتفكير.\",\n    \"tags\": [\"حالة نفسية\", \"تحليل نفسي\", \"مشاعر\", \"لاشعور\", \"شخصية\"]\n  },\n  {\n    \"id\": \"char_spontaneous\",\n    \"category\": \"خصائص رسوم الأطفال\",\n    \"title\": \"التلقائية في رسوم الأطفال\",\n    \"content\": \"التلقائية هي من أبرز الخصائص المميزة لرسوم الأطفال؛ فلا تعتمد على قوانين ثابتة، أو على إتقان لفن الرسم، بل تعتمد على المنطق والفكر الخاص بالطفل. توضح طبيعة الحياة أو العالم الذي يعيشه الطفل، فيعتمد عادةً على الخيال في رسم بعض الأحداث أو الأشياء الموجودة في مخيلته، ويرى أنها قادرة على توضيح الأفكار التي يريد أن يعبّر عنها.\",\n    \"tags\": [\"تلقائية\", \"خيال\", \"تعبير\", \"خصائص\"]\n  },\n  {\n    \"id\": \"char_transparency\",\n    \"category\": \"خصائص رسوم الأطفال\",\n    \"title\": \"الشفافية والمبالغة والحذف\",\n    \"content\": \"الشفافية: يعتمد الطفل على التعبير المباشر عما يشعر به، بغض النظر عن الصورة التي يراها في مخيلته، وقد يلجأ للخلط بين الواقع والخيال لإنتاج رسوم جديدة. المبالغة والحذف: يلجأ الطفل للمبالغة في بعض أجزاء رسمه أو إلغاء بعض الأجزاء الأخرى؛ وهذا لا يرجع إلى عدم قدرة الطفل بل إلى رغبته في التأكيد على الأجزاء التي يبالغ فيها أو العناصر التي يكبّرها أو يحذفها. تظهر هذه الظاهرة في رسوم الأطفال من سن الخامسة حتى الثانية عشرة.\",\n    \"tags\": [\"شفافية\", \"مبالغة\", \"حذف\", \"تكبير\", \"رموز\"]\n  },\n  {\n    \"id\": \"char_repetition\",\n    \"category\": \"خصائص رسوم الأطفال\",\n    \"title\": \"التكرار في الرسوم\",\n    \"content\": \"يلجأ أغلب الأطفال إلى تكرار رسوم كانوا قد رسموها في السابق؛ لشعورهم بأن الرسالة التي أرادوا أن يوصلوها لم تصل بشكل صحيح، أو بسبب ارتباطهم المباشر بمضمون الرسم، فيعتمدون على تكراره لتأكيد مدى أهميتها عندهم. مثل: تكرار رسم الوالدين وأفراد العائلة والمنزل. رسم الطفل لحضن والدته لعدة مرات وبصورة متكررة يدل على حاجته لحنانها.\",\n    \"tags\": [\"تكرار\", \"أسرة\", \"حاجة عاطفية\", \"رسالة\"]\n  },\n  {\n    \"id\": \"stages_1\",\n    \"category\": \"مراحل تطور الرسم\",\n    \"title\": \"مرحلة التخطيط (0-3 سنوات)\",\n    \"content\": \"مرحلة التخطيط هي المرحلة التي يعمل الطفل فيها أنواعاً مختلفة من الخطوط. ينتقل الطفل ما بين التخطيط العشوائي، والتخطيط الدائري، والتخطيط المسحي. وهي مرحلة يتأكد فيها النمو العضلي ودوره في رموز الطفل التي تنتهي أن يصاحب الرسم تسمية لهذه الرموز. في هذه المرحلة يقوم الطفل بالشخبطة على الأوراق والجدران وعلى كل ما يقع تحت يديه.\",\n    \"tags\": [\"مراحل\", \"تخطيط\", \"شخبطة\", \"0-3 سنوات\"]\n  },\n  {\n    \"id\": \"stages_2\",\n    \"category\": \"مراحل تطور الرسم\",\n    \"title\": \"مرحلة الموجز الشكلي والواقعية (4-12 سنة)\",\n    \"content\": \"مرحلة ما قبل الموجز الشكلي (4-7 سنوات): يطور الطفل تخطيطه إلى تمثيل رمزي مع التعبير المستمر والتنوع. مرحلة بداية الرسم الواقعي (7-9 سنوات): تصبح الرموز أكثر واقعية نظراً لنمو إدراك الطفل اتجاه البيئة الخارجية. مرحلة الواقعية الكاذبة (11 سنة): يصل مجهود التشكيل إلى الطبيعة وقد يعزف الطفل عن الرسم وتقل الإنتاجية الفنية نظراً للتغيرات المصاحبة لمرحلة البلوغ. فترة الحسم والتصميم (13 سنة): تأكيد اتجاه التعبير عند الأطفال سواء الذاتي أو البصري.\",\n    \"tags\": [\"مراحل\", \"7-12 سنة\", \"واقعية\", \"رموز\", \"نمو\"]\n  },\n  {\n    \"id\": \"colors_analysis\",\n    \"category\": \"تحليل الألوان\",\n    \"title\": \"دلالات الألوان في رسوم الأطفال\",\n    \"content\": \"الألوان الصريحة والحارة تعبر عن توازن نفسي، عكس الألوان القاتمة التي تدل على ميل للحزن والقلق. الألوان الباهتة تعبر عن عدم التوازن النفسي والعاطفي أو عن مرض صحي. الأسود: اللون الأكثر استخداماً في رسوم الخوف (299 استخداماً في دراسات)، بوصفه اللون الأكثر تعبيراً عن الخوف والمشاعر السلبية. الأحمر: يرمز للطاقة وقد يعبر عن العدوانية أو القوة. الأزرق: صُنِّف بوضوح ضمن الألوان المُسعِدة لدى الأطفال. الألوان الداكنة (الأسود والرمادي) ترتبط بالمشاعر السلبية. الألوان الفاتحة والزاهية ترتبط بالمشاعر الإيجابية.\",\n    \"tags\": [\"ألوان\", \"أسود\", \"أحمر\", \"أزرق\", \"مشاعر\", \"تحليل\"]\n  },\n  {\n    \"id\": \"colors_positive\",\n    \"category\": \"تحليل الألوان\",\n    \"title\": \"الألوان والمشاعر الإيجابية والسلبية\",\n    \"content\": \"أثبت الأطفال اتساقاً أكبر في تعيين ألوانهم المفضلة للمشاعر الإيجابية (سعيد، فخور، حب) مقارنةً بالمشاعر السلبية. يُرجَّح أن السبب في ذلك أن الأطفال الصغار يُحاطون بمواقف إيجابية في أغلب الأحيان، فتترسخ لديهم روابط اللون-الانفعال الإيجابية منذ وقت مبكر. استخدام اللون في تقييم الحالة الانفعالية للطفل يستلزم مراعاة تفضيلاته الشخصية والسياق الذي يُنشئ فيه عمله الفني.\",\n    \"tags\": [\"ألوان\", \"مشاعر إيجابية\", \"تشخيص\", \"تفضيل شخصي\"]\n  },\n  {\n    \"id\": \"fears_analysis\",\n    \"category\": \"الخوف في رسوم الأطفال\",\n    \"title\": \"أنواع مخاوف الأطفال وتصنيفها\",\n    \"content\": \"مخاوف الأطفال في الرسوم تُصنَّف إلى ست فئات: (1) مخاوف الحيوانات (28%): الثعبان، الكلب، القرش، العنكبوت، الديناصور. (2) مخاوف المواقف الخطرة والموت والقتل (24%): الخوف من القتل، خطف الأبوين، الاختطاف، اللصوص. (3) مخاوف المخلوقات الخيالية والقوى الخارقة (19%): الأشباح، العفاريت، الزومبي. (4) مخاوف الظلام والليل (16%): الظلام، الكوابيس، البقاء وحيداً ليلاً. (5) مخاوف الكوارث الطبيعية (11%): الزلازل، الحرائق، الفيضانات. (6) مخاوف طبية (3%): طبيب الأسنان، الحقن، الطبيب.\",\n    \"tags\": [\"خوف\", \"مخاوف\", \"حيوانات\", \"ظلام\", \"كوارث\", \"تصنيف\"]\n  },\n  {\n    \"id\": \"fears_gender\",\n    \"category\": \"الخوف في رسوم الأطفال\",\n    \"title\": \"الفروق في الخوف بين الجنسين والأعمار\",\n    \"content\": \"الفروق بحسب الجنس: الإناث أكثر خوفاً في فئات الحيوانات والمواقف الخطرة والظلام، في حين أبدى الذكور خوفاً أكبر من الكوارث الطبيعية والمشكلات الطبية. بحسب العمر: تزداد مخاوف المواقف الخطرة والمخلوقات الخيالية والكوارث الطبيعية مع التقدم في السن، بينما تتراجع مخاوف الحيوانات.\",\n    \"tags\": [\"خوف\", \"جنسين\", \"فروق\", \"أعمار\"]\n  },\n  {\n    \"id\": \"space_analysis\",\n    \"category\": \"تحليل مكان الرسم\",\n    \"title\": \"موضع الرسم في الصفحة ودلالاته\",\n    \"content\": \"الرسم في الأعلى: طموح وتعلق بالآمال. الرسم في الأسفل: ثبات وتعلق بالواقع أو عدم ثقة بالنفس. الرسم في الوسط: توازن وثقة. الرسم في اليسار: ارتباط بالماضي وبالأم. الرسم في اليمين: توجه نحو المستقبل. الرسم بحجم صغير مائل: قد يكون الطفل انطوائياً وحيداً ومنعزلاً. رسم أو تلوين خارج المربع: إخفاء أشياء أو طموح خارجي.\",\n    \"tags\": [\"مكان\", \"صفحة\", \"موضع\", \"دلالات\", \"طموح\"]\n  },\n  {\n    \"id\": \"shapes_analysis\",\n    \"category\": \"تحليل الأشكال والرموز\",\n    \"title\": \"دلالات الأشكال الهندسية والرموز\",\n    \"content\": \"رسم الدوائر: يرمز إلى طبيعة الطفل غير المستقرة كما تدل على كسله. رسم الأسهم المتجهة نحو الأعلى: يرمز إلى طموح الطفل. رسم الأشكال الحلزونية واللولبية: يدل على الحزن وقلة الثقة بالنفس، وأحياناً تكون دلالة على المكر والخديعة. رسم المتاهة: يعاني نزاعاً عاطفياً مغلفاً بشيء من الإحباط. الخطوط الحادة والزوايا الحادة: قد تشير إلى التوتر أو العدوانية.\",\n    \"tags\": [\"أشكال\", \"دوائر\", \"أسهم\", \"حلزونية\", \"رموز\", \"هندسة\"]\n  },\n  {\n    \"id\": \"family_drawing\",\n    \"category\": \"رسم العائلة\",\n    \"title\": \"تحليل رسم الأسرة والعلاقات العائلية\",\n    \"content\": \"اختبار رسم العائلة يُعدّ من أهم أدوات التقييم النفسي للأطفال. رسم الطفل لأسرته يكشف عن: العلاقات الأسرية وتوازنها، ومدى مشاعر الأمان والقلق، وترتيب الطفل بين إخوانه. التمثيل بالحجم مهم: الشخص المرسوم بحجم أكبر هو الأكثر سلطة أو تأثيراً. غياب شخص من الأسرة في الرسم قد يدل على رفض أو مشاعر سلبية تجاهه. وضع مسافة بين الأشكال يعكس البُعد العاطفي.\",\n    \"tags\": [\"أسرة\", \"علاقات\", \"حجم\", \"مسافة\", \"عائلة\"]\n  },\n  {\n    \"id\": \"human_figure\",\n    \"category\": \"رسم الشخصيات\",\n    \"title\": \"تحليل رسم الشخص والجسد\",\n    \"content\": \"اختبار رسم الشخص يعتمد على افتراض أساسي وهو أن الرسم إسقاط لمفهوم الذات. رسم الرأس الكبيرة: يدل على تضخم الذات أو على اهتمام كبير بالفكر. رسم الجسد الصغير: ضعف الثقة بالنفس. رسم الأيدي كبيرة: الشعور بالقوة أو العدوانية. رسم الأيدي خلف الظهر أو مخفية: الشعور بالذنب أو قمع المشاعر. رسم الأقدام ثابتة: الأمان والاستقرار. غياب الفم: صعوبة في التواصل اللفظي. العيون الكبيرة: يقظة وقلق من البيئة المحيطة.\",\n    \"tags\": [\"شخص\", \"جسد\", \"رأس\", \"يد\", \"قدم\", \"وجه\"]\n  },\n  {\n    \"id\": \"house_drawing\",\n    \"category\": \"رسم الأشياء والبيئة\",\n    \"title\": \"تحليل رسم البيت والبيئة\",\n    \"content\": \"اختبار رسم منزل وشجرة وشخص (HTP) يُعدّ من أشهر الاختبارات الإسقاطية. رسم البيت: يعبر عن مفهوم الطفل عن أسرته وبيئته المنزلية. البيت الكبير المفتوح: يشير إلى الانفتاح والدفء الأسري. البيت الصغير المغلق: قد يشير إلى الإحساس بالحبس أو البرود العاطفي. نوافذ كثيرة: انفتاح على العالم. غياب النوافذ: انعزال. الشجرة: تعبر عن نمو الذات ومفهوم القوة والحيوية. الشجرة بلا أوراق: الحزن أو الشعور بالجفاف العاطفي.\",\n    \"tags\": [\"بيت\", \"شجرة\", \"HTP\", \"أسرة\", \"بيئة\"]\n  },\n  {\n    \"id\": \"pandemic_study\",\n    \"category\": \"الدراسات البحثية\",\n    \"title\": \"رسوم الأطفال في ظروف الضغط (دراسة جائحة كوفيد-19)\",\n    \"content\": \"دراسة طولية شملت 138 طفلاً إيطالياً خلال جائحة كوفيد-19. خلال فترة الإغلاق الأول تراجعت مفردات المشاعر الإيجابية من 38 إلى 16 مفردة، بينما ارتفعت السلبية من 6 إلى 19. انخفاض معنوي في استخدام الألوان الداكنة بعد عام من الجائحة. الاستنتاج: الأطفال استطاعوا العودة إلى مستويات التعبير الانفعالي الطبيعية بعد عام، مما يثبت قدرة التعافي الانفعالي لديهم.\",\n    \"tags\": [\"كوفيد\", \"ضغط\", \"ألوان داكنة\", \"تعافي\", \"بحث\", \"جائحة\"]\n  },\n  {\n    \"id\": \"emotional_understanding\",\n    \"category\": \"الدراسات البحثية\",\n    \"title\": \"الفهم الانفعالي لدى الأطفال (7-8 سنوات)\",\n    \"content\": \"دراسة أجريت على 40 طفلاً بريطانياً. النتائج: الفتيات قدمن استجابات أكثر ملاءمة وجودة في التعبير الانفعالي مقارنة بالفتيان. الأطفال أجابوا بشكل أفضل على المشاعر الأساسية مقارنة بالمشاعر المعقدة. الألوان الزاهية تعكس الجانب الإيجابي، الألوان الداكنة تعكس الجانب السلبي. الفتيات تتفوقن في الوعي الانفعالي حتى بعد ضبط متغير الذكاء اللفظي.\",\n    \"tags\": [\"فهم انفعالي\", \"جنس\", \"فتيات\", \"وعي\", \"7-8 سنوات\"]\n  },\n  {\n    \"id\": \"art_therapy\",\n    \"category\": \"العلاج بالفن\",\n    \"title\": \"الرسم أداة علاجية وتشخيصية\",\n    \"content\": \"نشاطات الرسم أداة تشخيصية بالغة القيمة لدى الأطفال. الفن يُعدّ لغة الطفل للتواصل وهو وسيلة تعبير لا تعتمد على الإفصاح اللفظي. مستويات التنفيس عند الأطفال: المستوى المرضي (لا يستطيع التنفيس بأسلوب تكيفي)، المستوى الطبيعي (يتنفس بطريقة مقبولة اجتماعياً)، المستوى الإبداعي (يتحول التنفيس إلى إنجاز فني). يُوصى بأن يُدرَّب الآباء والمعلمون على قراءة رسوم الأطفال وفهم دلالاتها.\",\n    \"tags\": [\"علاج بالفن\", \"تشخيص\", \"تنفيس\", \"آباء\", \"معلمون\", \"علاج\"]\n  },\n  {\n    \"id\": \"analysis_basics\",\n    \"category\": \"أساسيات التحليل\",\n    \"title\": \"أسس تحليل رسوم الأطفال\",\n    \"content\": \"يعتمد تحليل رسوم الأطفال على أسس رئيسية: معرفة نوع جنس الطفل (ولد أو بنت)، معرفة عمر الطفل، معرفة جنسية الطفل وبيئته الثقافية، معرفة الظروف المحيطة بالطفل (ترتيبه وسط إخوانه، الظروف الأسرية من مشاكل وانفصال أو طلاق الأم أو غياب الأب)، مكان سكن الطفل ومستواه الاقتصادي. لا يمكن إعطاء اللون قيمة مطلقة بصورة عامة - تفسير استخدام الألوان في تقييم الحالة الانفعالية للطفل يستلزم مراعاة تفضيلاته الشخصية.\",\n    \"tags\": [\"أسس\", \"تحليل\", \"جنس\", \"عمر\", \"ثقافة\", \"ظروف\"]\n  },\n  {\n    \"id\": \"trauma_prenatal\",\n    \"category\": \"التأثيرات النفسية المبكرة\",\n    \"title\": \"التأثيرات الصادمة في التطور المبكر\",\n    \"content\": \"أبحاث تؤكد وجود ذاكرة في فترة ما قبل الولادة. أنواع الأحداث الصادمة المبكرة: غياب الترابط الأمومي-الجنيني، الهجر قبل الولادة، الرفض، العنف المنزلي. المشاعر المطبوعة في ذاكرة الجنين جنباً إلى جنب مع صوت الأم قد تُشكّل الأساس الأول للعلاقة الإنسانية والتعلق. الطفل يرسم من اللاشعور بكل مصداقية وعفوية.\",\n    \"tags\": [\"صدمة\", \"لاشعور\", \"مبكر\", \"تعلق\", \"أم\"]\n  },\n  {\n    \"id\": \"gender_differences\",\n    \"category\": \"الفروق بين الجنسين\",\n    \"title\": \"الفروق في التعبير الفني بين الذكور والإناث\",\n    \"content\": \"تُظهر الفتيات باستمرار فهماً انفعالياً أعلى وتعبيراً أكثر دقة مقارنة بالفتيان. الإناث أكثر خوفاً في فئات الحيوانات والمواقف الخطرة والظلام. الذكور يُبدون خوفاً أكبر من الكوارث الطبيعية والمشكلات الطبية. الإناث يسجلن درجات كفاءة أخلاقية أعلى من الذكور. فروق في تفضيل الألوان: الفتيات يعتبرن البنفسجي والوردي مُسعِدتين بينما الفتيان يعتبرانهما مزعجتين.\",\n    \"tags\": [\"ذكور\", \"إناث\", \"فروق\", \"جنس\", \"تعبير\", \"كفاءة\"]\n  },\n  {\n    \"id\": \"space_drawing\",\n    \"category\": \"تحليل مكان الرسم\",\n    \"title\": \"الفضاء السلبي والإيجابي في الرسم\",\n    \"content\": \"الأطفال الصغار (5-10 سنوات) يرسمون ما يعرفونه عن الأجسام (الواقعية الذهنية) وينتج عنه رسوم مخططية ذات طابع تقني. الأطفال الأكبر سناً يرسمون انطباعاتهم البصرية (الواقعية البصرية). رسوم الخطوط الخارجية (الفضاء السلبي) لا تظهر إلا ابتداءً من سن التاسعة.\",\n    \"tags\": [\"فضاء\", \"موضع\", \"إدراك\", \"واقعية\", \"بصري\"]\n  }\n]`;\n\n// 3. إعداد الـ System Prompt\nconst systemPrompt = `أنت خبير نفسي متخصص في تحليل رسوم الأطفال. عندك قاعدة المعرفة التالية:\\n${knowledgeBase}\\nأرجع ردك فقط كـ JSON صحيح بدون أي نص إضافي بهذا الشكل: {\"psychological_analysis\": \"...\", \"inner_state\": \"...\", \"strengths\": [\"...\"], \"concerns\": [\"...\"], \"recommendations\": [\"...\"], \"dominant_state\": \"...\", \"is_gifted\": \"...\", \"family_violence_risk\": \"...\", \"autism_risk\": \"...\", \"most_needed\": \"...\", \"happiness_sources\": [\"...\"], \"creativity_score\": 0, \"emotional_score\": 0, \"risk_level\": \"...\", \"parent_message\": \"...\"}`;\n\n// 4. بناء الـ Prompt الأساسي ببيانات الرسمة\nconst prompt = `\nأنت خبير نفسي متخصص في تحليل رسوم الأطفال.\nبناءً على قاعدة المعرفة العلمية الشاملة المرفقة، حلل هذه الرسمة بعمق:\n\nمعلومات الرسمة:\n- الألوان المستخدمة: ${item.colors_used || 'غير محدد'}\n- عدد الألوان: ${item.color_count || 0}\n- اللون السائد: ${item.dominant_color || 'غير محدد'}\n- درجة حرارة الألوان: ${item.color_temperature || 'غير محدد'}\n- تنوع الألوان: ${item.color_variety || 0}\n- العناصر الموجودة: ${item.elements_found || 'غير محدد'}\n- عدد الأشخاص: ${item.person_count || 0}\n- وجود صورة شخصية: ${item.is_self_portrait || 'غير محدد'}\n- حجم الشخصية: ${item.character_size || 'غير محدد'}\n- اكتمال العائلة: ${item.family_complete || 'غير محدد'}\n- موضع الرسم: ${item.drawing_position || 'غير محدد'}\n- حجم الرسم: ${item.drawing_size || 'غير محدد'}\n- الحالة العاطفية: ${item.emotional_state || 'غير محدد'}\n- مؤشر السعادة: ${item.happiness_index || 0}/10\n- مستوى التحذير: ${item.warning_level || 'طبيعي'}\n- مؤشر العنف: ${item.violence_index || 0}\n- مؤشر الاكتئاب: ${item.depression_index || 0}\n- قصة الرسمة: ${item.drawing_story || 'لا توجد قصة'}\n- المرحلة التطورية: ${item.development_stage || 'غير محدد'}\n- حالة الطفل: ${item.child_status || 'غير محدد'}\n- عمر الطفل: ${item.age_appropriate || 'غير محدد'}\n- مصادر السعادة: ${item.joy_sources || 'غير محدد'}\n\nالمطلوب بدقة:\n1. التحليل النفسي العميق بناءً على الألوان والعناصر.\n2. ما تكشفه الرسمة عن الحالة الداخلية للطفل.\n3. نقاط القوة النفسية الموجودة.\n4. أي مؤشرات تحتاج متابعة.\n5. توصيات عملية للوالدين والمعلمين.\n6. أكثر حالة يمتلكها الطفل حالياً.\n7. هل هو من الأطفال الموهوبين.\n8. نسبة تعرضه للعنف الأسري.\n9. نسبة تعرضه للتوحد.\n10. ما أهم شيء يحتاج إليه الطفل حالياً.\n11. ما أكثر الأشياء التي تجعله سعيداً.\n12. كم نسبة الإبداع لدى الطفل.\n`;\n\n// 5. الإخراج النهائي\nreturn {\n  prompt: JSON.stringify(prompt).slice(1, -1),\n  systemPrompt: JSON.stringify(systemPrompt).slice(1, -1),\n  rowData: item\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        0
+      ],
+      "id": "ea56612a-7e4d-42a9-8a80-81bf3c7782cf",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "\"YOUR_API_KEY_HERE\"",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "your api key"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"{{ $json.systemPrompt }}\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"{{ $json.prompt }}\"\n    }\n  ],\n  \"temperature\": 0.7,\n  \"max_tokens\": 2000\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1664,
+        0
+      ],
+      "id": "b23c5849-3576-46a4-ad37-eafb3cc2668e",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"rowData\": {{ JSON.stringify($('Code in JavaScript1').item.json.rowData) }},\n  \"llmContent\": \"{{ $json.choices[0].message.content.replace(/\\\"/g, '\\\\\\\"') }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2080,
+        0
+      ],
+      "id": "70967f14-e9d7-4f7e-ba7c-ca695ea4b2f8",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "const groqResponse = $input.first().json;\n\n// استخراج تحليل الـ LLM\nlet llm = {};\ntry {\n  const content = groqResponse?.choices?.[0]?.message?.content;\n  llm = JSON.parse(content);\n} catch(e) {}\n\n// بناء كلمات البحث بناءً على الحالة\nconst emotion = llm.dominant_state || 'تطوير الطفل';\nconst needed  = llm.most_needed   || 'أنشطة تعليمية';\n\nconst youtubeQueries = [\n  `child art therapy ${emotion}`,\n  `kids emotional development activities`,\n  `${needed} children support`\n];\n\n// إضافة الـ queries على الـ response الأصلي وإرجاعه\nreturn {\n  ...groqResponse,\n  youtube_queries: youtubeQueries,\n  youtube_search_url: `https://www.youtube.com/results?search_query=${encodeURIComponent(youtubeQueries[0])}`\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        0
+      ],
+      "id": "f161b56a-cc06-48b8-9a47-bf6a04570cac",
+      "name": "Code in JavaScript2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ac184755-31c1-40e7-868d-b572f81b54f5",
+  "meta": {
+    "instanceId": "1afbe0d48d637a83e6e6d1614b292d2a0e01a34693bfc831db421268b2e0fdee"
+  },
+  "id": "WnvWRXXo0XIyy48y",
+  "tags": []
+}
